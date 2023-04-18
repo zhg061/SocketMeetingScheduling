@@ -22,6 +22,8 @@ using namespace std;
 
 
 int sendUsersInvolved(int sockfd, sockaddr_in serverMAddr, string usersEntered){ 
+  transform(usersEntered.begin(), usersEntered.end(), usersEntered.begin(),
+                 [](unsigned char letter){ return tolower(letter); });
   ssize_t sentResult = send(sockfd, usersEntered.c_str(), 1024, 0);
   if (sentResult == -1) cout << "sentResult" << endl;
   else cout << "Client finished sending the usernames to Main Server." << endl;
@@ -46,6 +48,7 @@ string getTimeUsers(int sockfd, sockaddr_in serverMAddr, string &users){
   users = string(timeUsers).substr(0, pos);
   size_t bracket = string(timeUsers).find_last_of(']');
   string times = string(timeUsers).substr(pos+1, bracket-pos);
+  cout << times << endl;
   int port = ntohs(serverMAddr.sin_port);
   if (users != "empty") {
     if (times != "[]") cout << "Client received the reply from Main Server using TCP over port " << port << ": Time intervals " << times << " works for " << users << "." << endl;

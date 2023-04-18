@@ -186,6 +186,7 @@ void getUsersClient(int sockTCP, sockaddr_in clientAddr, int sockClient, char *u
   //cout << "usersInvolved" << usersInvolved << endl;
   if (recvInt == -1)
     cout << "recvInt" << endl;
+    
   int port = ntohs(clientAddr.sin_port);
   cout << "Main Server received the request from client using TCP over port "
        << port << "." << endl;
