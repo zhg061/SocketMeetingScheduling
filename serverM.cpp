@@ -283,7 +283,7 @@ void sendTimeUsersClient(string toA, string toB, string overlapABStr,
   if (sentResult == -1)
     cout << "sentResult" << endl;
   else
-    cout << "Main Server sent the result to the client." << endl;
+    if (result != "empty") cout << "Main Server sent the result to the client." << endl;
 }
 int main() {
   signal(SIGINT, closeAllConnection);

@@ -120,6 +120,7 @@ bool isListContained(list<list<int>> lists, list<int> compare) {
   if (compare.size() != 2) return false;
   int start = compare.front();
   int end = compare.back();
+  if (end <= start) return false;
   for (auto it = lists.begin(); it != lists.end(); ++it) {
     if ((*it).front() <= start && (*it).back() >= end) {
       return true;
