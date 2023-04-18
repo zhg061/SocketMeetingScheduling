@@ -21,6 +21,13 @@ using namespace std;
 string server = "B";
 int port = 22452;
 string file="b.txt";
+/**
+ * Calculates the overlap between two users' time intervals.
+ *
+ * @param user1 the list of start and end times for user1
+ * @param user2 the list of start and end times for user2
+ * @return the list of start and end times both user1 and user2 are available at
+ */
 list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2) {
   list<list<int>> timeOverlaps;
   for (list<int> time1 : user1) {
@@ -39,6 +46,12 @@ list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2) {
   }
   return timeOverlaps;
 }
+/**
+ * Convert the nested list of integers to a string
+ *
+ * @param overlap the nested list of integers 
+ * @return string version of overlap
+ */
 string nestedListToString(list<list<int>> overlap){
   stringstream ss;
   ss << "[";
@@ -54,6 +67,14 @@ string nestedListToString(list<list<int>> overlap){
   ss << "]";
   return ss.str();
 }
+/**
+ * Get the overlap for time intervals for a group by users
+ *
+ * @param users the list of users received from the main server
+ * @param myMap the hashmap that contains user name as the key and time intervals as the values
+ * @param overlap the resulting time intervals that all users are available at
+ * @return string version of the overlap list
+ */
 string checkOverlap(char* users, unordered_map<string, list<list<int>>> myMap, list<list<int>>& overlap){
   if (strlen(users)==0) return "empty";
   string str(users);
@@ -72,7 +93,13 @@ string checkOverlap(char* users, unordered_map<string, list<list<int>>> myMap, l
   else cout << users  << " do not have intersections."<< endl;
   return overlapString;
 }
-
+/**
+ * Send the time overlap to the main server.
+ *
+ * @param overlapString the string version of the list that will be sent to the main server
+ * @param serverMAddr the address of the main server
+ * @param the socket number for the current server
+ */
 void sendTimeOverlap(string overlapString, sockaddr_in serverMAddr, int sockfd){
   socklen_t serverMAddrLen = sizeof(serverMAddr);  
   if (overlapString.size() == 0) overlapString="empty";
@@ -84,16 +111,28 @@ void sendTimeOverlap(string overlapString, sockaddr_in serverMAddr, int sockfd){
     }
   }
 }
-void notifyServer(sockaddr_in serverMAddr, int sockfd, char* selectedTime){
+/**
+ * Notify the main server that registration has finished.
+ *
+ * @param serverMAddr the address of the main server
+ * @param the socket number for the current server
+ */
+void notifyServer(sockaddr_in serverMAddr, int sockfd, string selectedUsers){
   socklen_t serverMAddrLen = sizeof(serverMAddr);  
   string notify = "finished";
   ssize_t sendResult = sendto(sockfd, notify.c_str(), 1024, 0, (sockaddr*)&serverMAddr, serverMAddrLen);
   if (sendResult == -1) cout << "recvResult" << endl;
   else {
-    string s(selectedTime);
-    if (s != "[]")  cout << "Notified Main Server that registration has finished." << endl;
+    string s(selectedUsers);
+    if (s != "empty")  cout << "Notified Main Server that registration has finished." << endl;
   }
 }
+/**
+ * Convert string to list of time intervals
+ *
+ * @param s the string of time intervals received from the main server
+ * @return the nested list of integers
+ */
 list<list<int>> convertStringToNestedList(string s) {
   list<list<int>> result;
   int i = 0;
@@ -122,6 +161,12 @@ list<list<int>> convertStringToNestedList(string s) {
   }
   return result;
 }
+/**
+ * Convert string to time intervals
+ *
+ * @param s the string of time intervals received from the main server
+ * @return the list of integers
+ */
 list<int> convertStringToList(string s){
   s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
   list<int> mylist;
@@ -150,6 +195,13 @@ list<int> convertStringToList(string s){
   }
   return mylist;
 }
+/**
+ * Read in the file info, save the users, and time intervals into a string and a hashmap 
+ *
+ * @param s the string of users that are from the file
+ * @param myMap the hashmap that contains users as keys and time intervals as values
+ * @return an integer that indicate the file reading successful or not
+ */
 int readFile(string& serializedUsers, unordered_map<string, list<list<int>>>& myMap) {
   ifstream inputFile(file); 
   if (!inputFile.is_open()) { 
@@ -175,6 +227,13 @@ int readFile(string& serializedUsers, unordered_map<string, list<list<int>>>& my
   inputFile.close(); // close the file
   return 0;
 }
+/**
+ * Convert the list of users from the file to the main server
+ *
+ * @param sockfd the socket number of the current server
+ * @param serverMAddr the address of the main server
+ * @param serializedUsers the string of users separated by comma
+ */
 void sendUsers(int sockfd, sockaddr_in& serverMAddr, string serializedUsers){
   serverMAddr.sin_family = AF_INET;
   serverMAddr.sin_port = htons(23542); //main server
@@ -186,7 +245,14 @@ void sendUsers(int sockfd, sockaddr_in& serverMAddr, string serializedUsers){
   if (sentResult == -1) cout << "sentResult" << endl;
   else cout << "Server "<< server <<" finished sending a list of usernames to Main Server." << endl;
 }
-void receiveUsers(int sockfd, sockaddr_in serverMAddr, string serializedUsers, char *selectedUsers){
+/**
+ * Receive the users from the main server
+ *
+ * @param sockfd the socket number of the current server
+ * @param serverMAddr the address of the main server
+ * @param selectedUsers the string of users separated by comma
+ */
+void receiveUsers(int sockfd, sockaddr_in serverMAddr, char *selectedUsers){
   socklen_t serverMAddrLen = sizeof(serverMAddr);
   // send users to server M
   ssize_t recvResult = recvfrom(sockfd, selectedUsers, 1024, 0, (sockaddr*)&serverMAddr, &serverMAddrLen);
@@ -194,12 +260,26 @@ void receiveUsers(int sockfd, sockaddr_in serverMAddr, string serializedUsers, c
   string str(selectedUsers);
   if (str != "empty") cout << "Server "<< server <<" received the usernames from Main Server using UDP over port "<< port <<"." << endl;
 }
-void receiveTime(int sockfd, sockaddr_in serverMAddr, string serializedUsers, char *selectedTime){
+/**
+ * Receive the scheduled time from the main server
+ *
+ * @param sockfd the socket number of the current server
+ * @param serverMAddr the address of the main server
+ * @param selectedTime the string of time intervals from the main server
+ */
+void receiveTime(int sockfd, sockaddr_in serverMAddr, char *selectedTime){
   socklen_t serverMAddrLen = sizeof(serverMAddr);
   // receive time from server M
   ssize_t recvResult = recvfrom(sockfd, selectedTime, 1024, 0, (sockaddr*)&serverMAddr, &serverMAddrLen);
   if (recvResult == -1) cout << "sentResult" << endl;
 }
+/**
+ * Remove the time interval from the list, and replace it with new time intervals
+ *
+ * @param times the list of time intervals for a user
+ * @param time the time interval needed to be removed
+ * @return the updated list of time intervals
+ */
 list<list<int>> replaceList(list<list<int>> times, list<int> time){
   int start = time.front();
   int end = time.back();
@@ -224,6 +304,13 @@ list<list<int>> replaceList(list<list<int>> times, list<int> time){
   }
   return times;
 }
+/**
+ * Update the hashmap for the selected users
+ *
+ * @param myMap the hashmap that contains user name as the key and time intervals as the values
+ * @param selectedTime the time interval needed to be removed
+ * @param selectedUsers the users whose time intervals needed to be updated
+ */
 void UpdateMap(unordered_map<string, list<list<int>>>& myMap, char *selectedTime, char *selectedUsers){
   string str(selectedTime);
   list<int> time = convertStringToList(str);
@@ -245,19 +332,10 @@ void UpdateMap(unordered_map<string, list<list<int>>>& myMap, char *selectedTime
 }
 int main(){
   // read in file
-  // create an empty list
   string serializedUsers;
   unordered_map<string, list<list<int>>> myMap;
   readFile(serializedUsers, myMap);
 
-  //overlapTwoUsers(list1, list2);
-
-  //for (const auto& user: serializedUsers) {
-    //cout << "Key: " << user << endl;
-  //}
-  //for (auto const& [key, value] : myMap) {
-    //cout << "Key: " << key << ", Value: " << value.size() << endl;
-  //}
   // create a socket
   int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (sockfd == -1) cout << "sockfd" << endl;
@@ -280,16 +358,16 @@ int main(){
   sendUsers(sockfd, serverMAddr, serializedUsers);
   while (true){
     char selectedUsers[1024];
-    receiveUsers(sockfd, serverMAddr, serializedUsers, selectedUsers);
+    receiveUsers(sockfd, serverMAddr, selectedUsers);
     list<list<int>> overlap = {};
     string overlapString = checkOverlap(selectedUsers, myMap, overlap);
   
     // send time overlap to main server
     sendTimeOverlap(overlapString, serverMAddr, sockfd);
     char selectedTime[1024];
-    receiveTime(sockfd, serverMAddr, serializedUsers, selectedTime);
+    receiveTime(sockfd, serverMAddr, selectedTime);
     UpdateMap(myMap, selectedTime, selectedUsers);
-    notifyServer(serverMAddr, sockfd, selectedTime);
+    notifyServer(serverMAddr, sockfd, selectedUsers);
   }
   //while (true) { }
   close(sockfd);

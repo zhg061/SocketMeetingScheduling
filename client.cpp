@@ -20,15 +20,26 @@
 #include <unordered_map>
 using namespace std;
 
-
-int sendUsersInvolved(int sockfd, sockaddr_in serverMAddr, string usersEntered){ 
+/**
+ * Send the users entered by the client to the main server
+ *
+ * @param sockfd the socket number for the client
+ * @param serverMAddr the address for the main server
+ * @param usersEntered the users entered by the client
+ */
+void sendUsersInvolved(int sockfd, sockaddr_in serverMAddr, string usersEntered){ 
   transform(usersEntered.begin(), usersEntered.end(), usersEntered.begin(),
                  [](unsigned char letter){ return tolower(letter); });
   ssize_t sentResult = send(sockfd, usersEntered.c_str(), 1024, 0);
   if (sentResult == -1) cout << "sentResult" << endl;
   else cout << "Client finished sending the usernames to Main Server." << endl;
-  return 0;
 }
+/**
+ * Receive from the main server the invalid users
+ *
+ * @param sockfd the socket number for the client
+ * @param serverMAddr the address for the main server
+ */
 void getInvalidUsers(int sockfd, sockaddr_in serverMAddr){
   char invalidUsers[1024];
   ssize_t recvInt = recv(sockfd, invalidUsers, sizeof(invalidUsers), 0);
@@ -38,6 +49,14 @@ void getInvalidUsers(int sockfd, sockaddr_in serverMAddr){
   //cout << s << s.length() << endl;
   if (s.substr(0, 5) != "empty") cout << "Client received the reply from Main Server using TCP over port " << port << ": " << invalidUsers << " do not exist." << endl;
 }
+/**
+ * Receive from the main server the valid users and the their available time intervals
+ *
+ * @param sockfd the socket number for the client
+ * @param serverMAddr the address for the main server
+ * @param users the valid users
+ * @return times the string of time intervals that are free to choose
+ */
 string getTimeUsers(int sockfd, sockaddr_in serverMAddr, string &users){
   char timeUsers[1024];
   ssize_t recvInt = recv(sockfd, timeUsers, 1024, 0);
@@ -56,6 +75,12 @@ string getTimeUsers(int sockfd, sockaddr_in serverMAddr, string &users){
   }
   return times;
 }
+/**
+ * Convert string to list of time intervals
+ *
+ * @param s the string of time intervals received from the main server
+ * @return the nested list of integers
+ */
 list<list<int>> convertStringToNestList(string s) {
   s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
   list<list<int>> result;
@@ -89,6 +114,12 @@ list<list<int>> convertStringToNestList(string s) {
   }
   return result;
 }
+/**
+ * Convert string to time intervals
+ *
+ * @param s the string of time intervals received from the main server
+ * @return the list of integers
+ */
 list<int> convertStringToList(string& s){
   s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
   list<int> mylist;
@@ -119,6 +150,13 @@ list<int> convertStringToList(string& s){
   }
   return mylist;
 }
+/**
+ * Check if the time intervals are valid and are contained in the available list
+ *
+ * @param lists the list of time intervals are are free to choose
+ * @param compare the time intervals entered by the client
+ * @return bool that indicate whether the time intervals are valid and are contained in the list
+ */
 bool isListContained(list<list<int>> lists, list<int> compare) {
   if (compare.size() != 2) return false;
   int start = compare.front();
@@ -131,10 +169,14 @@ bool isListContained(list<list<int>> lists, list<int> compare) {
   }
   return false;
 }
-void checkTime(string times, string timesEntered){
-  list<list<int>> lists = convertStringToNestList(times);
-  list<int> list = convertStringToList(timesEntered);
-}
+/**
+ * Prompt the client to enter time intervals, and if they are valid, send the time intervals to the main server
+ *
+ * @param sockfd the socket number for the client
+ * @param serverMAddr the address for the main server
+ * @param times the string of time intervals that are available
+ * @param users the users that are valid
+ */
 void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
   list<list<int>> timesList = convertStringToNestList(times);
   string timeStr;
@@ -158,6 +200,12 @@ void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
     cout << "..." << endl;
   }
 }
+/**
+ * Receive the confirmation from the main server that the time intervals are booked for all users
+ *
+ * @param sockfd the socket number for the client
+ * @param serverMAddr the address for the main server
+ */
 void recvNotify(int sockfd, sockaddr_in serverMAddr){
   char notify[1024];
   ssize_t recvInt = recv(sockfd, notify, sizeof(notify), 0);

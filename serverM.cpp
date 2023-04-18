@@ -18,15 +18,13 @@
 #include <unordered_map>
 using namespace std;
 
-list<int> sockets;
-// close all connection when CTRL+C
-void closeAllConnection(int s){
-  for (int socket: sockets) {
-    close(socket);
-  }
-  exit(0);
-}
-// get the overlap of times between two users
+/**
+ * Calculates the overlap between two users' time intervals.
+ *
+ * @param user1 the list of start and end times for user1
+ * @param user2 the list of start and end times for user2
+ * @return the list of start and end times both user1 and user2 are available at
+ */
 list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2,
                                 string toA, string toB) {
   if (toA.size() == 0)
@@ -50,7 +48,12 @@ list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2,
   }
   return timeOverlaps;
 }
-// convert time intervals to a string for messaging
+/**
+ * Convert the nested list of integers to a string
+ *
+ * @param overlap the nested list of integers 
+ * @return string version of overlap
+ */
 string listToString(list<list<int>> overlap) {
   stringstream ss;
   ss << "[";
@@ -68,7 +71,15 @@ string listToString(list<list<int>> overlap) {
   ss << "]";
   return ss.str();
 }
-// receive the list of users from the backend server after botting up
+
+/**
+ * receive the list of users from the backend server after booting up
+ *
+ * @param server the string that indicate whether it's from serverA or serverB
+ * @param userToServer the hashmap that has the user names as the key and the server name as the value
+ * @param sockUDP the UDP socket number for the main server
+ * @param serverAddr the address for the serverA or the serverB 
+ */
 void getUsersServer(string server, unordered_map<string, string> &userToServer,
                     int sockUDP, sockaddr_in &serverAddr) {
   // receive users from server A/B
@@ -95,7 +106,12 @@ void getUsersServer(string server, unordered_map<string, string> &userToServer,
   cout << "Main Server received the username list from server " << server
        << " using UDP over port " << port << "." << endl;
 }
-// convert string to list 
+/**
+ * Convert string to list of time intervals
+ *
+ * @param s the string of time intervals received from the main server
+ * @return the nested list of integers
+ */
 list<list<int>> convertStringToList(string s) {
   list<list<int>> result;
   if (s.length() <= 1)
@@ -128,46 +144,43 @@ list<list<int>> convertStringToList(string s) {
   }
   return result;
 }
-// receive overlap from the users at server A
-list<list<int>> receiveOverlapsA(string server, int sockUDP,
-                                 sockaddr_in serverAddr) {
-  char overlapStringA[1024];
+
+/**
+ * receive overlap from the users at server A or server B
+ *
+ * @param server the string that indicate whether it's from serverA or serverB
+ * @param sockUDP the UDP socket number for the main server
+ * @param serverAddr the address for the serverA or the serverB 
+ * @return the nested list of integers
+ */
+list<list<int>> receiveOverlaps(string& server, int sockUDP, sockaddr_in serverAddr) {
+  char overlapString[1024];
   socklen_t serverAddrLen = sizeof(serverAddr);
-  ssize_t recvResult = recvfrom(sockUDP, overlapStringA, sizeof(overlapStringA),
+  ssize_t recvResult = recvfrom(sockUDP, overlapString, sizeof(overlapString),
                                 0, (sockaddr *)&serverAddr, &serverAddrLen);
   int port = ntohs(serverAddr.sin_port);
+  string s(overlapString);
+  if (port == 21452) server="A";
+  else server="B";
   if (recvResult == -1)
     cout << "recvResult" << endl;
   else {
-    string s(overlapStringA);
     //cout << "overlapStringA" << overlapStringA << endl;
     if (s != "empty") {
-       if (s != "[]") cout << "Main Server received from server " << server << " the intersection result using UDP over port " << port << ": " << overlapStringA << "." << endl;
+       if (s != "[]") cout << "Main Server received from server " << server << " the intersection result using UDP over port " << port << ": " << overlapString << "." << endl;
        else cout << "Found no intersection from server " << server << " using UDP over port " << port << "." << endl;
      }
   }
-  string str(overlapStringA);
-  return convertStringToList(str);
+  return convertStringToList(s);
 }
-list<list<int>> receiveOverlapsB(string server, int sockUDP,
-                                 sockaddr_in serverAddr) {
-  char overlapStringB[1024];
-  socklen_t serverAddrLen = sizeof(serverAddr);
-  ssize_t recvResult = recvfrom(sockUDP, overlapStringB, sizeof(overlapStringB),
-                                0, (sockaddr *)&serverAddr, &serverAddrLen);
-  int port = ntohs(serverAddr.sin_port);
-  if (recvResult == -1)
-    cout << "recvResult" << endl;
-   else {     
-     string s(overlapStringB); // convert char* to string
-     if (s != "empty") {
-       if (s != "[]") cout << "Main Server received from server " << server << " the intersection result using UDP over port " << port << ": " << overlapStringB << "." << endl;
-       else cout << "Found no intersection from server " << server << " using UDP over port " << port << "." << endl;
-     }
-  }
-  string str(overlapStringB);
-  return convertStringToList(str);
-}
+/**
+ * send the users to server A or server B
+ *
+ * @param server the string that indicate whether it's from serverA or serverB
+ * @param sockUDP the UDP socket number for the main server
+ * @param serverAddr the address for the serverA or the serverB 
+ * @param users the group of users that are from serverA/B
+ */
 void sendUsersServer(string server, int sockUDP,
                                 sockaddr_in serverAddr, string users) {
   if (users.length() > 0)
@@ -180,7 +193,14 @@ void sendUsersServer(string server, int sockUDP,
   if (sendResult == -1)
     cout << "recvResult" << endl;  
 }
-
+/**
+ * get the users from the client
+ *
+ * @param sockTCP the TCP socket number for the main server
+ * @param clientAddr the address for the client 
+ * @param sockClient the socket number of the client
+ * @param usersInvolved the group of users that are selected from the client
+ */
 void getUsersClient(int sockTCP, sockaddr_in clientAddr, int sockClient, char *usersInvolved) { 
   ssize_t recvInt = recv(sockClient, usersInvolved, 1024, 0);
   //cout << "usersInvolved" << usersInvolved << endl;
@@ -191,6 +211,16 @@ void getUsersClient(int sockTCP, sockaddr_in clientAddr, int sockClient, char *u
   cout << "Main Server received the request from client using TCP over port "
        << port << "." << endl;
 }
+/**
+ * receive the time intervals from the client and send to the backend servers
+ *
+ * @param sockTCP the TCP socket number for the main server
+ * @param serverAAddr the address for the serverA
+ * @param serverBAddr the address for the serverB
+ * @param clientAddr the address for the client 
+ * @param sockClient the socket number of the client
+ * @param timeSelected the string of time intervals from the client
+ */
 void recvSendTimes(int sockTCP, int socketUDP, sockaddr_in serverAAddr, sockaddr_in serverBAddr, sockaddr_in clientAddr, int sockClient, char *timeSelected) { 
   // receive from client
   ssize_t recvInt = recv(sockClient, timeSelected, 1024, 0);
@@ -206,7 +236,16 @@ void recvSendTimes(int sockTCP, int socketUDP, sockaddr_in serverAAddr, sockaddr
   if (sendResult == -1)
     cout << "recvResult" << endl;
 }
-void recvSendNotify(int sockTCP, int sockUDP, sockaddr_in serverAAddr, sockaddr_in serverBAddr, sockaddr_in clientAddr, int sockClient) { 
+/**
+ * receive the time intervals from the backend servers and send to the client
+ *
+ * @param sockUDP the UDP socket number for the main server
+ * @param serverAAddr the address for the serverA
+ * @param serverBAddr the address for the serverB
+ * @param clientAddr the address for the client 
+ * @param sockClient the socket number of the client
+ */
+void recvSendNotify(int sockUDP, sockaddr_in serverAAddr, sockaddr_in serverBAddr, sockaddr_in clientAddr, int sockClient) { 
   // receive from servers
   char notifyA[1024];
   socklen_t serverAddrLen = sizeof(serverAAddr);
@@ -228,6 +267,16 @@ void recvSendNotify(int sockTCP, int sockUDP, sockaddr_in serverAAddr, sockaddr_
     cout << "sentResult" << endl;
   
 }
+/**
+ * go over the users from the client, and find which is from the server A, which is from the server B, 
+ * and which is invalid, and store them to 3 separate strings accordingly
+ *
+ * @param usersInvolved the users entered by the client
+ * @param userToServer the hashmap that has the user names as the key and the server name as the value
+ * @param toA the strings of users separated by ", " from serverA
+ * @param toB the strings of users separated by ", " from serverB
+ * @param toC the strings of users separated by ", " that are invalid
+ */
 void examineUsers(char *usersInvolved,
                   unordered_map<string, string> userToServer, string &toA,
                   string &toB, string &toC) {
@@ -255,6 +304,14 @@ void examineUsers(char *usersInvolved,
     }
   }
 }
+/**
+ * send the invalid users back to the client
+ *
+ * @param sockTCP the TCP socket number for the main server
+ * @param clientAddr the address for the client 
+ * @param toC the strings of users separated by ", " that are invalid
+ * @param sockClient the socket number of the client
+ */
 void sendInvalidClient(int sockTCP, sockaddr_in clientAddr, string toC,
                        int sockClient) {
   if (toC.size() > 0)
@@ -266,6 +323,16 @@ void sendInvalidClient(int sockTCP, sockaddr_in clientAddr, string toC,
   if (sentResult == -1)
     cout << "sentResult" << endl;
 }
+/**
+ * send the valid users and valid time intervals back to the client
+ *
+ * @param toA the strings of users separated by ", " from serverA
+ * @param toB the strings of users separated by ", " from server
+ * @param overlapABStr the time intervals that work for all users
+ * @param sockTCP the TCP socket number for the main server
+ * @param clientAddr the address for the client 
+ * @param sockClient the socket number of the client
+ */
 void sendTimeUsersClient(string toA, string toB, string overlapABStr,
                          int sockTCP, sockaddr_in clientAddr, int sockClient) {
   string result;
@@ -287,12 +354,9 @@ void sendTimeUsersClient(string toA, string toB, string overlapABStr,
     if (result != "empty") cout << "Main Server sent the result to the client." << endl;
 }
 int main() {
-  signal(SIGINT, closeAllConnection);
   // create a socket
   int sockUDP = socket(AF_INET, SOCK_DGRAM, 0);
-  sockets.push_back(sockUDP);
   int sockTCP = socket(AF_INET, SOCK_STREAM, 0);
-  sockets.push_back(sockTCP);
   if (sockUDP == -1) {
     cerr << "Error creating UDP socket: " << strerror(errno) << endl;
     return 1;
@@ -340,7 +404,6 @@ int main() {
   clientAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
   socklen_t clientAddrLen = sizeof(clientAddr);
   sockClient = accept(sockTCP, (struct sockaddr *)&clientAddr, &clientAddrLen);
-  sockets.push_back(sockClient);
   if (sockClient == -1)
     cout << "accaptInt" << endl;
   
@@ -358,8 +421,17 @@ int main() {
     // find which server are the users coming from and send the server the users
     sendUsersServer("A", sockUDP, serverAAddr, toA);
     sendUsersServer("B", sockUDP, serverBAddr, toB);
-    list<list<int>> overlapA = receiveOverlapsA("A", sockUDP, serverAAddr);
-    list<list<int>> overlapB = receiveOverlapsB("B", sockUDP, serverBAddr);
+
+    string server;
+    list<list<int>> overlapA;
+    list<list<int>> overlapB;
+    list<list<int>> overlap = receiveOverlaps(server, sockUDP, serverAAddr);
+    if (server == "A") overlapA = overlap;
+    else overlapB = overlap;
+    overlap = receiveOverlaps(server, sockUDP, serverBAddr);
+    if (server == "A") overlapA = overlap;
+    else overlapB = overlap;
+
     string overlapABStr =
         listToString(overlapTwoUsers(overlapA, overlapB, toA, toB));
     if (overlapABStr != "[]" && overlapA.size() > 0 && overlapB.size() > 0) cout << "Found the intersection between the results from server A and B: "
@@ -368,7 +440,7 @@ int main() {
     // get the time from client and pass it to the backend servers
     char timeSelected[1024];
     recvSendTimes(sockTCP, sockUDP, serverAAddr, serverBAddr, clientAddr, sockClient, timeSelected);
-    recvSendNotify(sockTCP, sockUDP, serverAAddr, serverBAddr, clientAddr, sockClient);
+    recvSendNotify(sockUDP, serverAAddr, serverBAddr, clientAddr, sockClient);
   }
   close(sockClient);
   close(sockTCP);
