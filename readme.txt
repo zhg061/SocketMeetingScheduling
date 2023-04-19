@@ -18,9 +18,9 @@ e. The format of all the messages exchanged, e.g., usernames are concatenated an
   - time intervals are converted to char* and are in the format of "[[a, b], [c, d]]"
 
 g. Any idiosyncrasy of your project. It should say under what conditions the project fails, if any.
-  - if you stop serverM programming running, before all the other programs stop, and then you want to run these programs again, the serverM will generate a “address already in use” error
+  - N/A
 
 h. Reused Code: Did you use code from anywhere for your project? If not, say so. If so, say what functions and where they're from. (Also identify this with a comment in the source code). Reusing functions which are directly obtained from a source on the
 internet without or with few modifications is considered plagiarism (Except code from the Beej’s Guide). Whenever you are referring to an online resource, make sure to only look at the source, understand it, close it and then write the code by yourself. The TAs will perform plagiarism checks on your code so make sure to follow this step rigorously for every piece of code which will be submitted.
-	-N/A
+	- N/A
 
