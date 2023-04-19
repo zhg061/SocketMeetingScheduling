@@ -218,6 +218,7 @@ int readFile(string& serializedUsers, unordered_map<string, list<list<int>>>& my
     return 1;
   }  
   string line;
+
   while (getline(inputFile, line)) { 
     // find the position of the semicolon
     size_t pos = line.find(';');
@@ -228,8 +229,9 @@ int readFile(string& serializedUsers, unordered_map<string, list<list<int>>>& my
     user.erase(user.find_last_not_of(" ") + 1);
     
     // get the time intervals
+    size_t start = line.find_first_of('[');
     size_t bracket = line.find_last_of(']');
-    string times = line.substr(pos+2, bracket-pos+1);
+    string times = line.substr(start+1, bracket-start);
 
     // remove unwanted space
     times.erase(remove_if(times.begin(), times.end(), ::isspace), times.end());
