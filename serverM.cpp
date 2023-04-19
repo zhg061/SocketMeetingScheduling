@@ -322,8 +322,10 @@ void examineUsers(char *usersInvolved,
  */
 void sendInvalidClient(int sockTCP, sockaddr_in clientAddr, string toC,
                        int sockClient) {
-  if (toC.size() > 0)
-    cout << toC << " do not exist. Send a reply to the client." << endl;
+  if (toC.size() > 0){
+    if (toC == "noUserEntered") cout << " do not exist. Send a reply to the client." << endl;
+    else cout << toC << " do not exist. Send a reply to the client." << endl;
+  }
   socklen_t clientAddrLen = sizeof(clientAddr);
   // Send users invalid to the server
   if (toC.size() == 0) toC = "empty";

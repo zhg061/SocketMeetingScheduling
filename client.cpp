@@ -31,6 +31,7 @@ void sendUsersInvolved(int sockfd, sockaddr_in serverMAddr, string usersEntered)
   // convert all upper case to lower case
   transform(usersEntered.begin(), usersEntered.end(), usersEntered.begin(),
                  [](unsigned char letter){ return tolower(letter); });
+  if (usersEntered == "") usersEntered = "noUserEntered";
   ssize_t sentResult = send(sockfd, usersEntered.c_str(), 1024, 0);
   if (sentResult == -1) cout << "sentResult" << endl;
   else cout << "Client finished sending the usernames to Main Server." << endl;
@@ -49,7 +50,10 @@ void getInvalidUsers(int sockfd, sockaddr_in serverMAddr){
   if (recvInt == -1) cout << "recvInt" << endl; 
   string s(invalidUsers);
   //cout << s << s.length() << endl;
-  if (s.substr(0, 5) != "empty") cout << "Client received the reply from Main Server using TCP over port " << port << ": " << invalidUsers << " do not exist." << endl;
+  if (s.substr(0, 5) != "empty") {
+    if (s  == "noUserEntered") cout << "Client received the reply from Main Server using TCP over port " << port << ": " << " do not exist." << endl;
+    else cout << "Client received the reply from Main Server using TCP over port " << port << ": " << invalidUsers << " do not exist." << endl;
+  }
 }
 
 /**
@@ -216,7 +220,6 @@ void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
   if (sentResult == -1) cout << "sentResult" << endl;
   if (timesList.size() > 0) {
     cout << "Sent the request to register "<< timeStr <<"  as the meeting time for " << users << "." << endl;
-    cout << "..." << endl;
   }
 }
 
@@ -226,11 +229,14 @@ void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
  * @param sockfd the socket number for the client
  * @param serverMAddr the address for the main server
  */
-void recvNotify(int sockfd, sockaddr_in serverMAddr){
+void recvNotify(int sockfd, sockaddr_in serverMAddr, string times){
   char notify[1024];
   ssize_t recvInt = recv(sockfd, notify, sizeof(notify), 0);
+  //cout << times << endl;
   if (recvInt == -1) cout << "recvInt" << endl; 
-  else cout << "Received the notification that registration has finished." << endl;
+  else {
+    if (times != "")  cout << "Received the notification that registration has finished." << endl;
+  }
 }
 int main(){
   // create a socket
@@ -274,7 +280,7 @@ int main(){
     sendTime(sockfd, serverMAddr, times, users);
 
     // receive confirmation from the server
-    recvNotify(sockfd, serverMAddr);
+    recvNotify(sockfd, serverMAddr, times);
     cout << "-----Start a new request-----" << endl;
   }
      
