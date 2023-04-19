@@ -27,6 +27,8 @@ using namespace std;
  */
 list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2,
                                 string toA, string toB) {
+  // if A or B doesn't have users, then no need to calculate their overlap
+  // just return the other one's list                                
   if (toA.size() == 0)
     return user2;
   else if (toB.size() == 0)
@@ -38,8 +40,10 @@ list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2,
     for (list<int> time2 : user2) {
       int front2 = time2.front();
       int back2 = time2.back();
+      // found the overlapping intervals
       if (front1 < back2 && back1 > front2) {
         list<int> timeOverlap;
+        // generate new time intervals
         timeOverlap.push_back(max(front1, front2));
         timeOverlap.push_back(min(back1, back2));
         timeOverlaps.push_back(timeOverlap);
@@ -56,11 +60,13 @@ list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2,
  */
 string listToString(list<list<int>> overlap) {
   stringstream ss;
+  // outside bracket
   ss << "[";
   for (auto j = overlap.begin(); j != overlap.end(); ++j) {
+    //inner bracket
     ss << "[";
     for (auto i = (*j).begin(); i != (*j).end(); ++i) {
-      ss << *i;
+      ss << *i; // add start and end times
       if (next(i) != (*j).end())
         ss << ", ";
     }
@@ -91,6 +97,7 @@ void getUsersServer(string server, unordered_map<string, string> &userToServer,
     port = 21542;
   else
     port = 22542;
+  // assign port number
   serverAddr.sin_port = htons(port);
   socklen_t serverAddrLen = sizeof(serverAddr);
   ssize_t recvResult = recvfrom(sockUDP, users, sizeof(users), 0,
@@ -160,6 +167,7 @@ list<list<int>> receiveOverlaps(string& server, int sockUDP, sockaddr_in serverA
                                 0, (sockaddr *)&serverAddr, &serverAddrLen);
   int port = ntohs(serverAddr.sin_port);
   string s(overlapString);
+  // incase we receive the wrong connection 
   if (port == 21452) server="A";
   else server="B";
   if (recvResult == -1)
@@ -286,9 +294,9 @@ void examineUsers(char *usersInvolved,
     if (userToServer.find(user) != userToServer.end()) {
       if (userToServer[user] == "A") {
         if (toA.size() == 0)
-          toA += user;
+          toA += user; // first user to A
         else
-          toA += ", " + user;
+          toA += ", " + user; // not the first
       } else {
         if (toB.size() == 0)
           toB += user;
@@ -336,17 +344,17 @@ void sendInvalidClient(int sockTCP, sockaddr_in clientAddr, string toC,
 void sendTimeUsersClient(string toA, string toB, string overlapABStr,
                          int sockTCP, sockaddr_in clientAddr, int sockClient) {
   string result;
-  if (toA.size() != 0 && toB.size() != 0)
+  // decide what content to send to the client
+  if (toA.size() != 0 && toB.size() != 0) // send both A's and B's users plus the time intervals
     result = toA + ", " + toB + "; " + overlapABStr;
-  else if (toA.size() != 0)
-    result = toA + ";" + overlapABStr;
-  else if (toB.size() != 0)
+  else if (toA.size() != 0)  // send A's users plus the time intervals
+    result = toA + ";" + overlapABStr; 
+  else if (toB.size() != 0) // send B's users plus the time intervals
     result = toB + ";" + overlapABStr;
   else
     result = "empty";
   socklen_t clientAddrLen = sizeof(clientAddr);
-  // Send users invalid to the server
-  
+  // Send users and the time intervals separated by ";" to the server  
   ssize_t sentResult = send(sockClient, result.c_str(), 1024, 0);
   if (sentResult == -1)
     cout << "sentResult" << endl;
@@ -421,10 +429,12 @@ int main() {
     // find which server are the users coming from and send the server the users
     sendUsersServer("A", sockUDP, serverAAddr, toA);
     sendUsersServer("B", sockUDP, serverBAddr, toB);
-
+    // server could be "A" or "B"
     string server;
+    // overlap received from serverA, and B
     list<list<int>> overlapA;
     list<list<int>> overlapB;
+    // overlap could come from A or B
     list<list<int>> overlap = receiveOverlaps(server, sockUDP, serverAAddr);
     if (server == "A") overlapA = overlap;
     else overlapB = overlap;

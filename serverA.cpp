@@ -30,16 +30,19 @@ string file="a.txt";
  */
 list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2) {
   list<list<int>> timeOverlaps;
+  // iterate through user1
   for (list<int> time1 : user1) {
     int front1 = time1.front();
     int back1 = time1.back();
     for (list<int> time2 : user2) {
       int front2 = time2.front();
       int back2 = time2.back();
+      // there is an overlap
       if (front1 < back2 && back1 > front2) {
         list<int> timeOverlap;
         timeOverlap.push_back(max(front1, front2));
         timeOverlap.push_back(min(back1, back2));
+        // add the new time interval to the list
         timeOverlaps.push_back(timeOverlap);
       }
     }
@@ -55,10 +58,14 @@ list<list<int>> overlapTwoUsers(list<list<int>> user1, list<list<int>> user2) {
 string nestedListToString(list<list<int>> overlap){
   stringstream ss;
   ss << "[";
+  // outside bracket
   for (auto j = overlap.begin(); j != overlap.end(); ++j) {
+    // inner bracket
     ss << "[";
     for (auto i = (*j).begin(); i != (*j).end(); ++i) {
+      // add time
       ss << *i;
+      // add comma if haven't reached to the end of list
       if (next(i) != (*j).end()) ss << ",";
     }
     ss << "]";
@@ -85,9 +92,11 @@ string checkOverlap(char* users, unordered_map<string, list<list<int>>> myMap, l
     // remove leading and trailing spaces
     user.erase(0, user.find_first_not_of(" "));
     user.erase(user.find_last_not_of(" ") + 1);
+    // if this is the first comparison, just compare the two same lists
     if (overlap.size() == 0) overlap = overlapTwoUsers(myMap[user], myMap[user]);
-    overlap = overlapTwoUsers(overlap, myMap[user]);
+    else overlap = overlapTwoUsers(overlap, myMap[user]);
   }
+  // get the string version of the overlap
   string overlapString = nestedListToString(overlap);
   if (overlapString != "[]") cout << "Found the intersection result: " << overlapString << " for " << users << "." << endl;
   else cout << users  << " do not have intersections."<< endl;
@@ -218,8 +227,11 @@ int readFile(string& serializedUsers, unordered_map<string, list<list<int>>>& my
     user.erase(0, user.find_first_not_of(" "));
     user.erase(user.find_last_not_of(" ") + 1);
     
+    // get the time intervals
     size_t bracket = line.find_last_of(']');
     string times = line.substr(pos+2, bracket-pos+1);
+
+    // remove unwanted space
     times.erase(remove_if(times.begin(), times.end(), ::isspace), times.end());
     myMap[user] = convertStringToNestedList(times);    
     serializedUsers += user + ' ';
@@ -284,11 +296,14 @@ list<list<int>> replaceList(list<list<int>> times, list<int> time){
   int start = time.front();
   int end = time.back();
   for (auto it = times.begin(); it != times.end(); ++it) {
+    // within the range for *it
     if ((*it).front() <= start && (*it).back() >= end) {
-      
+      // get the start and end time of (*it)
       int itS = (*it).front();
       int itE = (*it).back();
+      // remove the current time interval
       it = times.erase(it);
+      // replace it with new time interval/s
       if (itS < start && itE == end) {
         times.insert(it, {itS, start});
       }
@@ -299,6 +314,7 @@ list<list<int>> replaceList(list<list<int>> times, list<int> time){
         times.insert(it, {itS, start});
         times.insert(it, {end, itE});
       }
+      // exit once found the range
       break;
     }
   }
@@ -313,11 +329,13 @@ list<list<int>> replaceList(list<list<int>> times, list<int> time){
  */
 void UpdateMap(unordered_map<string, list<list<int>>>& myMap, char *selectedTime, char *selectedUsers){
   string str(selectedTime);
+  // get the time interval selected by the client
   list<int> time = convertStringToList(str);
   if (str == "[]") return;
   string myString(selectedUsers);
   if (myString == "empty") return;
-  stringstream ss(selectedUsers);  
+  stringstream ss(selectedUsers); 
+  // each user from the selected users 
   string user;
   cout << "Register a meeting at "<< selectedTime <<" and update the availability for the following users:" << endl;
   while (getline(ss, user, ',')) {
@@ -357,19 +375,27 @@ int main(){
   sockaddr_in serverMAddr;
   sendUsers(sockfd, serverMAddr, serializedUsers);
   while (true){
+    // receive users from the main server
     char selectedUsers[1024];
     receiveUsers(sockfd, serverMAddr, selectedUsers);
     list<list<int>> overlap = {};
+
+    // calculate the time overlaps of these users
     string overlapString = checkOverlap(selectedUsers, myMap, overlap);
   
-    // send time overlap to main server
+    // send the time overlap to main server
     sendTimeOverlap(overlapString, serverMAddr, sockfd);
+
+    // receive the selected time interval from the main server
     char selectedTime[1024];
     receiveTime(sockfd, serverMAddr, selectedTime);
+
+    // update the hashmap by removing the timeinterval for the selected users
     UpdateMap(myMap, selectedTime, selectedUsers);
+
+    // notify the server the update is complete
     notifyServer(serverMAddr, sockfd, selectedUsers);
   }
-  //while (true) { }
   close(sockfd);
   return 0;
 }

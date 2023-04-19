@@ -28,12 +28,14 @@ using namespace std;
  * @param usersEntered the users entered by the client
  */
 void sendUsersInvolved(int sockfd, sockaddr_in serverMAddr, string usersEntered){ 
+  // convert all upper case to lower case
   transform(usersEntered.begin(), usersEntered.end(), usersEntered.begin(),
                  [](unsigned char letter){ return tolower(letter); });
   ssize_t sentResult = send(sockfd, usersEntered.c_str(), 1024, 0);
   if (sentResult == -1) cout << "sentResult" << endl;
   else cout << "Client finished sending the usernames to Main Server." << endl;
 }
+
 /**
  * Receive from the main server the invalid users
  *
@@ -49,6 +51,7 @@ void getInvalidUsers(int sockfd, sockaddr_in serverMAddr){
   //cout << s << s.length() << endl;
   if (s.substr(0, 5) != "empty") cout << "Client received the reply from Main Server using TCP over port " << port << ": " << invalidUsers << " do not exist." << endl;
 }
+
 /**
  * Receive from the main server the valid users and the their available time intervals
  *
@@ -61,13 +64,15 @@ string getTimeUsers(int sockfd, sockaddr_in serverMAddr, string &users){
   char timeUsers[1024];
   ssize_t recvInt = recv(sockfd, timeUsers, 1024, 0);
   if (recvInt == -1) cout << "recvInt" << endl; 
+
   // find the position of the semicolon
   size_t pos = string(timeUsers).find(';');
+
   // get the substring before the semicolon
   users = string(timeUsers).substr(0, pos);
   size_t bracket = string(timeUsers).find_last_of(']');
   string times = string(timeUsers).substr(pos+1, bracket-pos);
-  cout << times << endl;
+  //cout << times << endl;
   int port = ntohs(serverMAddr.sin_port);
   if (users != "empty") {
     if (times != "[]") cout << "Client received the reply from Main Server using TCP over port " << port << ": Time intervals " << times << " works for " << users << "." << endl;
@@ -75,6 +80,7 @@ string getTimeUsers(int sockfd, sockaddr_in serverMAddr, string &users){
   }
   return times;
 }
+
 /**
  * Convert string to list of time intervals
  *
@@ -82,6 +88,7 @@ string getTimeUsers(int sockfd, sockaddr_in serverMAddr, string &users){
  * @return the nested list of integers
  */
 list<list<int>> convertStringToNestList(string s) {
+  // remove spaces from the time intervals
   s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
   list<list<int>> result;
   if (s.length() <= 1)
@@ -114,6 +121,7 @@ list<list<int>> convertStringToNestList(string s) {
   }
   return result;
 }
+
 /**
  * Convert string to time intervals
  *
@@ -121,6 +129,7 @@ list<list<int>> convertStringToNestList(string s) {
  * @return the list of integers
  */
 list<int> convertStringToList(string& s){
+  // remove unwanted spaces
   s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
   list<int> mylist;
   if (s.length() <= 1)
@@ -150,6 +159,7 @@ list<int> convertStringToList(string& s){
   }
   return mylist;
 }
+
 /**
  * Check if the time intervals are valid and are contained in the available list
  *
@@ -158,17 +168,21 @@ list<int> convertStringToList(string& s){
  * @return bool that indicate whether the time intervals are valid and are contained in the list
  */
 bool isListContained(list<list<int>> lists, list<int> compare) {
+  // compare must only have a start time and a end time
   if (compare.size() != 2) return false;
+  // extract the start and end time
   int start = compare.front();
   int end = compare.back();
   if (end <= start) return false;
   for (auto it = lists.begin(); it != lists.end(); ++it) {
+    // found the valid time intervals
     if ((*it).front() <= start && (*it).back() >= end) {
       return true;
     }
   }
   return false;
 }
+
 /**
  * Prompt the client to enter time intervals, and if they are valid, send the time intervals to the main server
  *
@@ -178,10 +192,14 @@ bool isListContained(list<list<int>> lists, list<int> compare) {
  * @param users the users that are valid
  */
 void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
+  // get the time intervals into nested list structure
   list<list<int>> timesList = convertStringToNestList(times);
   string timeStr;
+  // invalidTime determines whether go in to the while loop again
   bool invalidTime = 1;
+  // notfirst is used to distinguish if the while loop has been ran before
   bool notFirst = 0;
+  // keep prompting the use to enter time intervals until the time interval is valid
   while (invalidTime == 1 && timesList.size() > 0) {
     if (notFirst == 1) cout << "Time interval "<<  timeStr <<" is not valid. Please enter again:"<< endl;
     else {
@@ -192,6 +210,7 @@ void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
     list<int> time = convertStringToList(timeStr);
     if (isListContained(timesList, time)) invalidTime = 0;
   } 
+  // incase there are no time available
   if (timesList.size() == 0) timeStr="[]";
   ssize_t sentResult = send(sockfd, timeStr.c_str(), 1024, 0);
   if (sentResult == -1) cout << "sentResult" << endl;
@@ -200,6 +219,7 @@ void sendTime(int sockfd, sockaddr_in serverMAddr, string times, string users){
     cout << "..." << endl;
   }
 }
+
 /**
  * Receive the confirmation from the main server that the time intervals are booked for all users
  *
@@ -223,12 +243,14 @@ int main(){
   serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
   cout << "Client is up and running." << endl;
   
+  // Set up the server address and port number
   sockaddr_in serverMAddr;
   serverMAddr.sin_family = AF_INET;
   serverMAddr.sin_port = htons(24542);
   serverMAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
   socklen_t serverMAddrLen = sizeof(serverMAddr);
-  //while (accaptInt == -1){
+
+  //connect to the main server
   if (connect(sockfd, (sockaddr*) &serverMAddr, serverMAddrLen) < 0) {
     perror("connection failed");
     exit(EXIT_FAILURE);
@@ -237,16 +259,21 @@ int main(){
     string usersEntered;
     cout << "Please enter the usernames to check schedule availability:"<< endl;
     getline(cin, usersEntered);
-    // Set up the server address and port number
     
+    // send the users' name to the main server 
     sendUsersInvolved(sockfd, serverMAddr, usersEntered);
   
     // Receive invalid users
     getInvalidUsers(sockfd, serverMAddr);
-    //while (true) { }
+
+    // receive valid users and their time overlaps
     string users;
     string times = getTimeUsers(sockfd, serverMAddr, users);
+
+    // select a time interval and send to the main server
     sendTime(sockfd, serverMAddr, times, users);
+
+    // receive confirmation from the server
     recvNotify(sockfd, serverMAddr);
     cout << "-----Start a new request-----" << endl;
   }
