@@ -1,0 +1,10 @@
+A meeting schedule system without the headache of emailing back and forth. This system receives a list of names involved in the meeting and returns the time intervals that work for every participant based on their availability. To maintain the privacy of everyone’s daily schedule, the availability of all users is stored on backend servers and cannot be accessed by any other servers or clients. Due to a large number of users, more than one backend servers are deployed to store their availability. A main server is then needed to manage which backend server a user’s information is stored in. The main server also plays a role of handling requests from clients.
+
+When a user wants to schedule a meeting among a group of people, the user will start a client program, enter all names involved in the meeting and request the main server for the time intervals that works for every participant. Once the main server receives the request, it decides which backend server the participants’ availability is stored in and sends a request to the responsible backend server for the time intervals that works for all participants belonging to this backend server. Once the backend server receives the request from the main server, it searches in the database to get all requested users’ availability, runs an algorithm to find the intersection among them and sends the result back to the main server. The main server receives the time slotsfrom different backend servers, runs an algorithm to get the final time slots that works for all participants, and sends the result back to the client. The scheduler then can decide the final meeting time according to the available time recommendations and schedule it in the involved users’ calendars.
+
+In this system, there are one client, one main server and two backend
+servers.
+● Client: used to access the meeting scheduling system.
+● Main server (serverM): coordinate with the backend servers.
+● Backend server (serverA and serverB): store the availability of all users and get the time
+slots that work for all meeting participants once receiving requests.
